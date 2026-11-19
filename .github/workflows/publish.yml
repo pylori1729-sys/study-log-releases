@@ -1,0 +1,33 @@
+name: Publish release
+
+# apk/ に新しいAPKとお知らせ文（notes.md）が入ったら、Releases に公開する
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'apk/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find APK
+        id: apk
+        run: |
+          f=$(ls apk/study-log-*.apk | sort -V | tail -1)
+          v=$(basename "$f" .apk | sed 's/^study-log-//')
+          echo "file=$f" >> "$GITHUB_OUTPUT"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.apk.outputs.version }}
+          name: 勉強記録 ${{ steps.apk.outputs.version }}
+          body_path: apk/notes.md
+          files: ${{ steps.apk.outputs.file }}
+          make_latest: true
